@@ -40,14 +40,16 @@ struct set
   struct can *cans;
 };
 
-static void
-set_init (struct set *s, size_t nb_cans, long long unsigned int *can_levels)
+static struct set *
+set_create (size_t nb_cans, long long unsigned int *can_levels)
 {
+  struct set *s = malloc (sizeof (*s));
   s->nb_cans = nb_cans + 1;
   s->cans = calloc (s->nb_cans, sizeof (*s->cans));
   for (size_t i = 0; i < nb_cans; i++)
     s->cans[i].max_level = can_levels[i];
   s->cans[s->nb_cans - 1].reservoir = 1;
+  return s;
 }
 
 static void
@@ -193,10 +195,13 @@ ribbon_add_set (struct ribbon *r, struct set *s, size_t depth, struct elem *prev
   r->end = new;
 }
 
-static void
-ribbon_init (struct ribbon *r, struct set *s)
+static struct ribbon *
+ribbon_create (size_t nb_cans, long long unsigned int *can_levels)
 {
+  struct set *s = set_create (nb_cans, can_levels);
+  struct ribbon *r = calloc (1, sizeof (*r));
   ribbon_add_set (r, s, 0, 0);
+  return r;
 }
 
 static void
@@ -282,14 +287,9 @@ main (int argc, char *argv[])
     }
   }
 
-  struct set *s = malloc (sizeof (*s));
-  set_init (s, nb_cans, can_levels);
+  struct ribbon *Ribbon = ribbon_create (nb_cans, can_levels);
   free (can_levels);
-
-  struct ribbon *Ribbon = calloc (1, sizeof (*Ribbon));
-  ribbon_init (Ribbon, s);
   ribbon_feed (Ribbon);
-
   ribbon_print (Ribbon);
   ribbon_summary_print (Ribbon);
   ribbon_free (Ribbon);
