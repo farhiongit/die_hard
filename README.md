@@ -1,12 +1,27 @@
 # Die Hard With a Vengeance brain teaser
 
-Jugs can be filled from a fountain, to their maximum capacity, or from another jug, up to their maximum capacity.
-Jugs can be emptied to a sink or poured into another jug, up to its maximum capacity.
+Last weekwas the movie "Die Hard With a Vengeance" was broadcasted on TV.
 
-## Example, from the movie:
+I won't comment on the movie, but on this scene where Bruce Willis and Samuel Jackson struggle with two empty jugs, with no other indication than there capacity: one jug is 5 gallons large, and the other is 3 gallons.
+They can fill the jugs from a fountain of water, empty them to a sink, or pour some water from one jug into the other.
+They are asked to fill the 5 gallons jug with excatly 4 gallons of water.
+
+How can they manage to do that ? With as few moves as possible ?
+Is it possible to get other volimes, from 1 to 8 gallons of water as well ?
+What about jugs with different capacities ?
+What if there are more than two jugs ?
+
+The program here answers all theses questions.
+
+## Usage
+
+Pass the volume of each jug as parameter.
+There can be more than 2 jugs, some jugs can have the same capacity.
+
+## Example (from the movie)
 
 * Two empty jugs hold 3 gallons and 5 gallons, respectively.
-* Fill one of the jugs with exactly four gallons of water.
+* How to fill one of the jugs with exactly four gallons of water ?
 
 ```
 $ make die_hard
@@ -34,5 +49,4 @@ One shortest path for every possible combination of cans:
 k
 ```
 
-* Answer:
-  {3,0} {5,0} -> {3,0} {5,5} -> {3,3} {5,2} -> {3,0} {5,2} -> {3,2} {5,0} -> {3,2} {5,5} -> {3,3} **{5,4}** = {8,7} (6 moves).
+* Answer: 4 is reachable in 6 moves : {3,0} {5,0} -> {3,0} {5,5} -> {3,3} {5,2} -> {3,0} {5,2} -> {3,2} {5,0} -> {3,2} {5,5} -> {3,3} **{5,4}** = {8,7} (6 moves).
