@@ -64,7 +64,7 @@ set_print (const struct set *s)
 {
   for (size_t c = 0; c < s->nb_cans; c++)
     if (!s->cans[c].reservoir)
-      fprintf (stdout, _("{%1$llu,%2$llu} "), s->cans[c].max_level, s->cans[c].level);
+      fprintf (stdout, _("{%1$llu/%2$llu} "), s->cans[c].level, s->cans[c].max_level);
 }
 
 static int
@@ -129,9 +129,14 @@ struct ribbon
 {
   struct elem
   {
-    size_t depth;
-    struct elem *prev;
     struct set *set;
+    struct move
+    {
+      size_t depth;
+      struct elem *prev;
+      struct can *from, *to;
+      long long unsigned int pour;
+    } move;
     struct elem *next;
   } *begining, *end;
 };
@@ -152,40 +157,25 @@ ribbon_free (struct ribbon *r)
 static void
 ribbon_elem_print (const struct elem *e)
 {
-  if (e->prev)
+  if (e->move.prev)
   {
-    ribbon_elem_print (e->prev);
-    fprintf (stdout, _("-> "));
+    ribbon_elem_print (e->move.prev);
+    if (!e->move.from->reservoir && !e->move.to->reservoir)
+      fprintf (stdout, _("=(~%llu~>)=> "), e->move.pour);
+    else if (e->move.from->reservoir && !e->move.to->reservoir)
+      fprintf (stdout, _("=( ~>%llu)=> "), e->move.pour);
+    else if (!e->move.from->reservoir && e->move.to->reservoir)
+      fprintf (stdout, _("=(%llu~> )=> "), e->move.pour);
   }
   set_print (e->set);
 }
 
 static void
-ribbon_print (const struct ribbon *r)
-{
-  fprintf (stdout, _("One shortest path for every possible combination of cans:\n"));
-  for (struct elem * e = r->begining; e; e = e->next)
-  {
-    ribbon_elem_print (e);
-    long long unsigned int level = 0;
-    long long unsigned int max_level = 0;
-    for (size_t c = 0; c < e->set->nb_cans; c++)
-      if (!e->set->cans[c].reservoir)
-      {
-        max_level += e->set->cans[c].max_level;
-        level += e->set->cans[c].level;
-      }
-    fprintf (stdout, _("= {%1$llu,%2$llu} (%3$zu moves).\n"), max_level, level, e->depth);
-  }
-}
-
-static void
-ribbon_add_set (struct ribbon *r, struct set *s, size_t depth, struct elem *prev)
+ribbon_add_set (struct ribbon *r, struct set *s, struct move move)
 {
   qsort (s->cans, s->nb_cans, sizeof (struct can), can_cmp);
   struct elem *new = malloc (sizeof (*new));
-  new->depth = depth;
-  new->prev = prev;
+  new->move = move;
   new->set = s;
   new->next = 0;
   if (r->end == 0)
@@ -200,14 +190,39 @@ ribbon_create (size_t nb_cans, long long unsigned int *can_levels)
 {
   struct set *s = set_create (nb_cans, can_levels);
   struct ribbon *r = calloc (1, sizeof (*r));
-  ribbon_add_set (r, s, 0, 0);
+  ribbon_add_set (r, s, (struct move)
+                  { 0, 0, 0, 0, 0 });
   return r;
 }
 
 static void
-ribbon_feed (struct ribbon *Ribbon)
+ribbon_feed (struct ribbon *r)
 {
-  for (struct elem * e = Ribbon->begining; e; e = e->next)
+  size_t max = 0;
+  for (size_t c = 0; c < r->begining->set->nb_cans; c++)
+    max += r->begining->set->cans[c].max_level;
+  struct elem **summary = calloc (max, sizeof (*summary));
+
+  for (struct elem * e = r->begining; e; e = e->next)
+  {
+    int stop = 0;
+    for (size_t pattern = 1; pattern < (1 << e->set->nb_cans); pattern++)
+    {
+      long long unsigned int sum = 0;
+      for (size_t c = 0; c < e->set->nb_cans; c++)
+        if ((1 << c) & pattern)
+          sum += e->set->cans[c].level;
+      if (sum && !summary[sum - 1])
+      {
+        summary[sum - 1] = e;
+        stop = 1;
+      }
+    }
+    for (size_t sum = 1; sum <= max && stop; sum++)
+      if (!summary[sum - 1])
+        stop = 0;
+    if (stop)
+      break;                    // for (struct elem * e = r->begining; e; e = e->next)
     for (size_t from = 0; from < e->set->nb_cans; from++)
       for (size_t to = 0; to < e->set->nb_cans; to++)
       {
@@ -216,46 +231,33 @@ ribbon_feed (struct ribbon *Ribbon)
         s->cans = malloc (s->nb_cans * sizeof (*s->cans));
         for (size_t i = 0; i < s->nb_cans; i++)
           s->cans[i] = e->set->cans[i];
-        if (set_pour (s, from, to))
+        long long unsigned int pour = set_pour (s, from, to);
+        if (pour)
         {
           int already = 0;
-          for (struct elem * e2 = Ribbon->begining; e2 && !already; e2 = e2->next)
+          for (struct elem * e2 = r->begining; e2 && !already; e2 = e2->next)
             if (set_cmp (s, e2->set) == 0)
               already = 1;
           if (!already)
           {
-            ribbon_add_set (Ribbon, s, e->depth + 1, e);
-            continue;
+            ribbon_add_set (r, s, (struct move)
+                            { e->move.depth + 1, e, &e->set->cans[from], &e->set->cans[to], pour });
+            continue;           // for (from, to...
           }
         }
         set_free (s);
-      }
-}
+      }                         // for (from, to...
+  }                             // for (struct elem * e = r->begining; e; e = e->next)
 
-static void
-ribbon_summary_print (struct ribbon *r)
-{
-  size_t max = 0;
-  for (size_t c = 0; c < r->begining->set->nb_cans; c++)
-    max += r->begining->set->cans[c].max_level;
-  size_t *summary = calloc (max + 1, sizeof (*summary));
-
-  for (struct elem * e = r->begining; e; e = e->next)
-    for (size_t pattern = 1; pattern < (1 << e->set->nb_cans); pattern++)
+  for (size_t sum = 1; sum <= max; sum++)
+    if (summary[sum - 1])
     {
-      long long unsigned int sum = 0;
-      for (size_t c = 0; c < e->set->nb_cans; c++)
-        if ((1 << c) & pattern)
-          sum += e->set->cans[c].level;
-      if (sum && !summary[sum])
-        summary[sum] = e->depth;
+      fprintf (stdout, _("The volume %1$zu is reachable in %2$zu moves: "), sum, summary[sum - 1]->move.depth);
+      ribbon_elem_print (summary[sum - 1]);
+      fprintf (stdout, "\n");
     }
-  for (size_t i = 0; i <= max; i++)
-    if (i == 0 || summary[i])
-      fprintf (stdout, _("%1$zu is reachable in %2$zu moves ; "), i, summary[i]);
     else
-      fprintf (stdout, _("%zu is unreachable ; "), i);
-  fprintf (stdout, "\n");
+      fprintf (stdout, _("The volume %zu is not reachable.\n"), sum);
   free (summary);
 }
 
@@ -282,7 +284,7 @@ main (int argc, char *argv[])
     }
     else
     {
-      fprintf (stderr, _("%1$s: \"%2$s\" is an invalid integer.\n"), argv[0], argv[i]);
+      fprintf (stderr, _("%1$s: \"%2$s\" is an invalid positive integer.\n"), argv[0], argv[i]);
       exit (-1);
     }
   }
@@ -290,7 +292,5 @@ main (int argc, char *argv[])
   struct ribbon *Ribbon = ribbon_create (nb_cans, can_levels);
   free (can_levels);
   ribbon_feed (Ribbon);
-  ribbon_print (Ribbon);
-  ribbon_summary_print (Ribbon);
   ribbon_free (Ribbon);
 }
