@@ -25,18 +25,26 @@ There can be more than 2 jugs, some jugs can have the same capacity.
 * How to fill one of the jugs with exactly 4 gallons of water ?
 
 ```
-$ make die_hard
+$ make
 $ ./die_hard
 Usage: ./die_hard volume [volume]...
 $./die_hard 3 5
-The volume 1 is reachable in 4 moves: {0/3} {0/5} =( ~>3)=> {3/3} {0/5} =(~3~>)=> {0/3} {3/5} =( ~>3)=> {3/3} {3/5} =(~2~>)=> {1/3} {5/5} 
-The volume 2 is reachable in 2 moves: {0/3} {0/5} =( ~>5)=> {0/3} {5/5} =(~3~>)=> {3/3} {2/5} 
-The volume 3 is reachable in 1 moves: {0/3} {0/5} =( ~>3)=> {3/3} {0/5} 
-The volume 4 is reachable in 6 moves: {0/3} {0/5} =( ~>5)=> {0/3} {5/5} =(~3~>)=> {3/3} {2/5} =(3~> )=> {0/3} {2/5} =(~2~>)=> {2/3} {0/5} =( ~>5)=> {2/3} {5/5} =(~1~>)=> {3/3} {4/5} 
-The volume 5 is reachable in 1 moves: {0/3} {0/5} =( ~>5)=> {0/3} {5/5} 
-The volume 6 is reachable in 3 moves: {0/3} {0/5} =( ~>3)=> {3/3} {0/5} =(~3~>)=> {0/3} {3/5} =( ~>3)=> {3/3} {3/5} 
-The volume 7 is reachable in 5 moves: {0/3} {0/5} =( ~>5)=> {0/3} {5/5} =(~3~>)=> {3/3} {2/5} =(3~> )=> {0/3} {2/5} =(~2~>)=> {2/3} {0/5} =( ~>5)=> {2/3} {5/5} 
-The volume 8 is reachable in 2 moves: {0/3} {0/5} =( ~>3)=> {3/3} {0/5} =( ~>5)=> {3/3} {5/5} 
+The volume 1 is reachable in no less than 4 moves:
+ {0/3} {0/5} =( ~>3)=> {3/3} {0/5} =(~3~>)=> {0/3} {3/5} =( ~>3)=> {3/3} {3/5} =(~2~>)=> {1/3} {5/5} 
+The volume 2 is reachable in no less than 2 moves:
+ {0/3} {0/5} =( ~>5)=> {0/3} {5/5} =(~3~>)=> {3/3} {2/5} 
+The volume 3 is reachable in no less than 1 moves:
+ {0/3} {0/5} =( ~>3)=> {3/3} {0/5} 
+The volume 4 is reachable in no less than 6 moves:
+ {0/3} {0/5} =( ~>5)=> {0/3} {5/5} =(~3~>)=> {3/3} {2/5} =(3~> )=> {0/3} {2/5} =(~2~>)=> {2/3} {0/5} =( ~>5)=> {2/3} {5/5} =(~1~>)=> {3/3} {4/5} 
+The volume 5 is reachable in no less than 1 moves:
+ {0/3} {0/5} =( ~>5)=> {0/3} {5/5} 
+The volume 6 is reachable in no less than 3 moves:
+ {0/3} {0/5} =( ~>3)=> {3/3} {0/5} =(~3~>)=> {0/3} {3/5} =( ~>3)=> {3/3} {3/5} 
+The volume 7 is reachable in no less than 5 moves:
+ {0/3} {0/5} =( ~>5)=> {0/3} {5/5} =(~3~>)=> {3/3} {2/5} =(3~> )=> {0/3} {2/5} =(~2~>)=> {2/3} {0/5} =( ~>5)=> {2/3} {5/5} 
+The volume 8 is reachable in no less than 2 moves:
+ {0/3} {0/5} =( ~>3)=> {3/3} {0/5} =( ~>5)=> {3/3} {5/5} 
 ```
 
-* Answer: The volume 4 is reachable in not less than 6 moves.
+* Answer: The volume 4 is reachable in no less than 6 moves.
